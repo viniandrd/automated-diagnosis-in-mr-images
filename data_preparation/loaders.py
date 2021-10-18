@@ -1,18 +1,18 @@
 from pathlib import Path
 
-import matplotlib.pyplot as plt
+import cv2
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import load_img
 
+
 class Dataset:
-    """Helper to return the images (for the chosen modality) and ground truth paths"""
-    def __init__(self, path, modality='flair'):
+    def __init__(self, path, modality='flair', test_split=0.2):
         self.path = path
         self.modality = modality
+        self.test_split = test_split
 
     def get_data(self):
-        "Returns tuples of paths (image, mask)"
         imgs = []
         segs = []
         for path in Path(self.path).rglob('*.png'):
@@ -26,9 +26,7 @@ class Dataset:
 
 
 class DataGenerator(tf.keras.utils.Sequence):
-    """Helper to iterate over the data (as Numpy arrays)."""
-
-    def __init__(self, tuples, img_size=(128, 128), batch_size=4):
+    def __init__(self, tuples, img_size=(128, 128), batch_size=1):
         self.input_img_paths = [tuples[i][0] for i in range(len(tuples))]
         self.target_img_paths = [tuples[i][1] for i in range(len(tuples))]
 
@@ -55,9 +53,8 @@ class DataGenerator(tf.keras.utils.Sequence):
             x.append(img)
 
         for j, path in enumerate(batch_target_img_paths):
-            img = plt.imread(path)
-            img = np.array(img)
-            img = np.resize(img, self.img_size)
-            y.append(tf.one_hot(img.astype(np.int64), 3))
+            img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+            img = cv2.resize(img, (self.img_size[0], self.img_size[1]))
+            y.append(tf.one_hot(img.astype(np.int64), 4))
 
         return np.array(x), np.array(y)

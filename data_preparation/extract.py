@@ -43,7 +43,7 @@ def extract(input, output, initial_slice=0, final_slice=155):
         for slice in range(initial_slice, final_slice):
             img = image_array[:, :, slice]
             img = np.rot90(np.rot90(np.rot90(img)))
-            img = resize(img, (240, 240), order=0, preserve_range=True, anti_aliasing=False)
+            img = resize(img, (240, 240, 3), order=0, preserve_range=True, anti_aliasing=False)
 
             if ('flair' in path.parts[-1]):
                 output_tissue = output_label + 'flair/'
@@ -96,3 +96,9 @@ def extract(input, output, initial_slice=0, final_slice=155):
         c += 1
 
     print('Done!')
+
+
+if __name__ == '__main__':
+    input = ''
+    output = ''
+    extract(input, output, 70, 120)
