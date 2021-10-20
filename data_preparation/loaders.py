@@ -33,8 +33,88 @@ class Dataset:
             self._extract()
 
         self._filter()
-        self._split_data()
-        self._save_sets_csv()
+        self._get_sets()
+        #TODO salvar os caminhos no csv só a partir do HGG/+/ e LGG/+
+
+    def _get_csvs(self):
+        print('>> Searching for sets in csv format..')
+        sets = dict()
+        try:
+            train_set = pd.read_csv('train_set.csv')
+            val_set =  pd.read_csv('val_set.csv')
+            test_set = pd.read_csv('test_set.csv')
+            sets['train_set'] = train_set
+            sets['val_set'] = val_set
+            sets['test_set'] = test_set
+            print('!! Found them.')
+            return sets
+        except FileNotFoundError:
+            print("!! Sets not found!")
+            return sets
+    
+    def _get_sets(self):
+        sets =self._get_csvs()
+        train = None
+        val = None
+        test = None
+        
+        if len(sets) == 0:
+            self._split_data()
+            self._save_sets_csv()
+        else:
+            for set in sets:      
+                if 'train' in set:
+                    tuples = [(begin, end) for begin, end in sets['train_set'].values.tolist()]
+                    self.train = tuples
+                elif 'val' in set:
+                    tuples = [(begin, end) for begin, end in sets['val_set'].values.tolist()]
+                    self.val = tuples
+                else:
+                    tuples = [(begin, end) for begin, end in sets['test_set'].values.tolist()]
+                    self.test = tuples
+
+    def _split_data(self):
+        print('>> Splitting data....')
+        imgs = []
+        segs = []
+        for path in Path(self.images_path).rglob('*.png'):
+            if 'seg' in str(path):
+                segs.append(str(path))
+            elif f'{self.modality}' in str(path):
+                imgs.append(str(path))
+
+        tuples = list(zip(imgs, segs))
+
+        self.train = tuples[:int(len(tuples) * self.train_split)]
+        self.val = tuples[int(len(tuples) * self.train_split):int(len(tuples) * self.test_split)]
+        self.test = tuples[int(len(tuples) * self.val_split):]
+        print('<< Split done!')
+
+    def _save_sets_csv(self):
+        sets = [self.train, self.val, self.test]
+
+        idx = 0
+        for set in sets:
+            imgs = []
+            segs = []
+
+            for i in range(len(set)):
+                imgs.append(set[i][0])
+                segs.append(set[i][1])
+
+            data = {'imgs': imgs, 'segs': segs}
+            df_test = pd.DataFrame(data)
+            if idx == 0:
+                df_test.to_csv('train_set.csv', index=False)
+                print('!! Train set paths saved to > train_set.csv')
+            elif idx == 1:
+                df_test.to_csv('val_set.csv', index=False)
+                print('!! Val set paths saved to > val_set.csv')
+            else:
+                df_test.to_csv('test_set.csv', index=False)
+                print('!! Test set paths saved to > test_set.csv')
+            idx += 1
+
 
     def _extract(self):
         amount = count(self.input_path, 'nii.gz')
@@ -166,36 +246,6 @@ class Dataset:
 
 
         print('<< Done!\n')
-
-    def _split_data(self):
-        print('>> Splitting data....')
-        imgs = []
-        segs = []
-        for path in Path(self.images_path).rglob('*.png'):
-            if 'seg' in str(path):
-                segs.append(str(path))
-            elif f'{self.modality}' in str(path):
-                imgs.append(str(path))
-
-        tuples = list(zip(imgs, segs))
-
-        self.train = tuples[:int(len(tuples) * self.train_split)]
-        self.val = tuples[int(len(tuples) * self.train_split):int(len(tuples) * self.test_split)]
-        self.test = tuples[int(len(tuples) * self.val_split):]
-        print('<< Split done!')
-
-    def _save_sets_csv(self):
-        imgs = []
-        segs = []
-
-        for i in range(len(self.test)):
-            imgs.append(self.test[i][0])
-            segs.append(self.test[i][1])
-
-        data_test = {'imgs': imgs, 'segs': segs}
-        df_test = pd.DataFrame(data_test)
-        df_test.to_csv('test_set.csv', index=False)
-        print('!! Test set paths saved to > test_set.csv')
 
     def get_data(self):
         return self.train, self.val, self.test

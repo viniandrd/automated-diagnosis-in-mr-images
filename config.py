@@ -1,10 +1,10 @@
 config = dict()
 
 # BraTS19 dataset path (extracted once)
-config['dataset_path'] = r'D:\Dados\ViniAndrade\TCC\BraTS19\MICCAI_BraTS_2019_Data_Training'
+config['dataset_path'] = 'D:/Dados/ViniAndrade/TCC/BraTS19/MICCAI_BraTS_2019_Data_Training'
 
 # Path for images extraction
-config['images_path'] = r'D:\Dados\ViniAndrade\TCC\BraTS19\BraTS19 PNG\'
+config['images_path'] = 'D:/Dados/ViniAndrade/TCC/BraTS19/BraTS19 PNG/'
 
 # Which MR modality extract
 config['modality'] = 'flair'
