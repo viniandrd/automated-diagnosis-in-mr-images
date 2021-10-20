@@ -51,6 +51,15 @@ class Dataset:
         except FileNotFoundError:
             print("!! Sets not found!")
             return sets
+
+    def join_imgs_path(self, tuples):
+        for idx, tup in enumerate(tuples):
+            #print(f'{idx}: {tup}')
+            img = self.images_path + tup[0]
+            seg = self.images_path + tup[1]
+            tuples[idx][0] = img
+            tuples[idx][1] = seg
+        return tuples
     
     def _get_sets(self):
         sets =self._get_csvs()
@@ -64,13 +73,16 @@ class Dataset:
         else:
             for set in sets:      
                 if 'train' in set:
-                    tuples = [(begin, end) for begin, end in sets['train_set'].values.tolist()]
+                    tuples = sets['train_set'].values.tolist()
+                    tuples = self.join_imgs_path(tuples)
                     self.train = tuples
                 elif 'val' in set:
-                    tuples = [(begin, end) for begin, end in sets['val_set'].values.tolist()]
+                    tuples = sets['val_set'].values.tolist()
+                    tuples = self.join_imgs_path(tuples)
                     self.val = tuples
                 else:
-                    tuples = [(begin, end) for begin, end in sets['test_set'].values.tolist()]
+                    tuples = sets['test_set'].values.tolist()
+                    tuples = self.join_imgs_path(tuples)
                     self.test = tuples
 
     def _split_data(self):
@@ -78,9 +90,12 @@ class Dataset:
         imgs = []
         segs = []
         for path in Path(self.images_path).rglob('*.png'):
-            if 'seg' in str(path):
+            path = str(path)
+            if 'seg' in path:
+                #segs.append(str(path[-31:]))
                 segs.append(str(path))
-            elif f'{self.modality}' in str(path):
+            elif f'{self.modality}' in path:
+                #imgs.append(str(path[-33:]))
                 imgs.append(str(path))
 
         tuples = list(zip(imgs, segs))
@@ -99,8 +114,10 @@ class Dataset:
             segs = []
 
             for i in range(len(set)):
-                imgs.append(set[i][0])
-                segs.append(set[i][1])
+                img = set[i][0]
+                seg = set[i][1]
+                imgs.append(img[-33:])
+                segs.append(seg[-31:])
 
             data = {'imgs': imgs, 'segs': segs}
             df_test = pd.DataFrame(data)
