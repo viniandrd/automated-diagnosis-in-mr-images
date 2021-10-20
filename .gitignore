@@ -133,3 +133,6 @@ dmypy.json
 
 # Project
 /test_set
+testes.ipynb
+main.py
+main.ipynb
