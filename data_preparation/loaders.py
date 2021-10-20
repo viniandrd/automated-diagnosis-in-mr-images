@@ -1,19 +1,19 @@
-from pathlib import Path
-
-import cv2, os
-import numpy as np
-import tensorflow as tf
-from tensorflow.keras.preprocessing.image import load_img
-from skimage.transform import resize
-from tensorflow.keras.preprocessing.image import save_img
+import cv2
 import imageio
-import pandas as pd
-from utils import *
 import nibabel
+import numpy as np
+import os, glob
+import pandas as pd
+import tensorflow as tf
+from skimage.transform import resize
+from pathlib import Path
+from tensorflow.keras.preprocessing.image import load_img
+from tensorflow.keras.preprocessing.image import save_img
 
 class Dataset:
-    def __init__(self, path, images_path, modality='flair', initial_slice=0, final_slice=155, train_split=0.8, test_split=0.1, val_split=0.1, ):
-        self.path = path
+    def __init__(self, path, images_path, modality='flair', extract=True, initial_slice=0, final_slice=155, train_split=0.8,
+                 test_split=0.1, val_split=0.1):
+        self.input_path = path
         self.images_path = images_path
         self.initial_slice = initial_slice
         self.final_slice = final_slice
@@ -27,9 +27,12 @@ class Dataset:
         self.val = None
         self.test = None
 
-        self.patients_HGG = []
-        self.patients_LGG = []
+        if extract:
+            self.patients_HGG = []
+            self.patients_LGG = []
+            self._extract()
 
+        self._filter()
         self._split_data()
         self._save_sets_csv()
 
@@ -38,7 +41,6 @@ class Dataset:
         c = 0
         for path in Path(self.input_path).rglob('*.nii.gz'):
             HGG = False
-
             data = nibabel.load(path)
             image_array = data.get_fdata()
 
@@ -53,10 +55,10 @@ class Dataset:
                     self.patients_LGG.append(path.parts[-2])
 
             if HGG:
-                output_label = self.output_path + 'HGG/'
+                output_label = self.images_path + 'HGG/'
                 index = self.patients_HGG.index(path.parts[-2])
             else:
-                output_label = self.output_path + 'LGG/'
+                output_label = self.images_path + 'LGG/'
                 index = self.patients_LGG.index(path.parts[-2])
 
             patient = 'patient{:03d}'.format(index + 1)
@@ -76,11 +78,11 @@ class Dataset:
                         os.makedirs(output_tissue)
                         print("Created ouput directory: " + output_tissue)
 
-                    mask_gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+                    mask_gray = cv2.cvtColor(img.astype('float32'), cv2.COLOR_RGB2GRAY)
                     # not black image
                     if not cv2.countNonZero(mask_gray) == 0:
-                        imageio.imwrite(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png', img.astype(np.uint8))
-
+                        imageio.imwrite(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png',
+                                        img.astype(np.uint8))
 
                 if ('flair' in path.parts[-1]):
                     output_tissue = output_label + 'flair/'
@@ -115,16 +117,61 @@ class Dataset:
                         os.makedirs(output_tissue)
                         print("Created ouput directory: " + output_tissue)
 
-                    imageio.imwrite(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png', img)
+                    save_img(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png', img, scale=True)
 
             printProgressBar(c + 1, amount, prefix='Progress:', suffix='Complete', length=50)
             c += 1
+
+
+    def _filter(self):
+        print('>> Filtering black images (without ground truth)..')
+        labels = ['HGG', 'LGG']
+        for label in labels:
+            path_to_tumors = self.images_path + f'{label}/seg'
+            path_to_modality = self.images_path + f'{label}/flair'
+
+            tumors = glob.glob(path_to_tumors + '/*.png')
+            images = glob.glob(path_to_modality + '/*.png')
+
+            tumors_filter = []
+            images_filters = []
+
+            idx = 0
+            for tumor in tumors:
+                tumors_filter.append(tumor[-16:])
+                idx += 1
+
+            idx = 0
+            for img in images:
+                images_filters.append(img[-16:])
+                idx += 1
+
+            count = 0
+            idx = 0
+            for imgs in images_filters:
+                if not imgs in tumors_filter:
+                    os.remove(images[idx])
+                    count += 1
+                idx += 1
+
+            print('    ------------')
+            print('    Before deleting: ', count)
+
+            count2 = 0
+            for img in images_filters:
+                if not img in tumors_filter:
+                    count2 += 1
+
+            print('    After deleting: ', count2)
+
+
+        print('<< Done!\n')
 
     def _split_data(self):
         print('>> Splitting data....')
         imgs = []
         segs = []
-        for path in Path(self.path).rglob('*.png'):
+        for path in Path(self.images_path).rglob('*.png'):
             if 'seg' in str(path):
                 segs.append(str(path))
             elif f'{self.modality}' in str(path):
@@ -133,10 +180,9 @@ class Dataset:
         tuples = list(zip(imgs, segs))
 
         self.train = tuples[:int(len(tuples) * self.train_split)]
-        self.val = tuples[int(len(tuples) * self.train_split):int(len(tuples) * self.test_split)] 
+        self.val = tuples[int(len(tuples) * self.train_split):int(len(tuples) * self.test_split)]
         self.test = tuples[int(len(tuples) * self.val_split):]
-        print('!! Split done!')
-
+        print('<< Split done!')
 
     def _save_sets_csv(self):
         imgs = []
@@ -145,7 +191,7 @@ class Dataset:
         for i in range(len(self.test)):
             imgs.append(self.test[i][0])
             segs.append(self.test[i][1])
-    
+
         data_test = {'imgs': imgs, 'segs': segs}
         df_test = pd.DataFrame(data_test)
         df_test.to_csv('test_set.csv', index=False)
@@ -153,9 +199,6 @@ class Dataset:
 
     def get_data(self):
         return self.train, self.val, self.test
-
-
-    
 
 
 class DataGenerator(tf.keras.utils.Sequence):
@@ -191,3 +234,33 @@ class DataGenerator(tf.keras.utils.Sequence):
             y.append(tf.one_hot(img.astype(np.int64), 4))
 
         return np.array(x), np.array(y)
+
+# Print iterations progress
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
+
+def count(input, type):
+    count = 0
+    for path in Path(input).rglob('*.' + type):
+        count += 1
+
+    return count

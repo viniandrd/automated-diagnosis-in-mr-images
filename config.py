@@ -4,7 +4,7 @@ config = dict()
 config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
 
 # Path for images extraction
-config['data_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19 PNG 70-120/'
+config['images_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19 PNG 70-120/'
 
 # Which MR modality extract
 config['modality'] = 'flair'
