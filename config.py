@@ -1,13 +1,13 @@
 config = dict()
 
 # BraTS19 dataset path (extracted once)
-config['dataset_path'] = 'D:/Dados/ViniAndrade/TCC/BraTS19/MICCAI_BraTS_2019_Data_Training'
+config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
 
 # Path for images extraction
-config['images_path'] = 'D:/Dados/ViniAndrade/TCC/BraTS19/BraTS19 PNG/'
+config['images_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19 PNG 70-120 4/'
 
 # Which MR modality extract
-config['modality'] = 'flair'
+config['modality'] = 't1c'
 
 # Extract slices starting from
 config['initial_slice'] = 70
@@ -19,10 +19,10 @@ config['final_slice'] = 120
 config['input_shape'] = (None, None, 1)
 
 # Epochs for training models
-config['epochs'] = 200
+config['epochs'] = 100
 
 # Batch size
-config['batch_size'] = 32
+config['batch_size'] = 16
 
 # Path to save results (weights, training history, graphics)
 config['save_dir'] = ''

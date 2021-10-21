@@ -26,7 +26,6 @@ class Dataset:
         self.train = None
         self.val = None
         self.test = None
-
         if extract:
             self.patients_HGG = []
             self.patients_LGG = []
@@ -54,7 +53,6 @@ class Dataset:
 
     def join_imgs_path(self, tuples):
         for idx, tup in enumerate(tuples):
-            #print(f'{idx}: {tup}')
             img = self.images_path + tup[0]
             seg = self.images_path + tup[1]
             tuples[idx][0] = img
@@ -63,9 +61,6 @@ class Dataset:
     
     def _get_sets(self):
         sets =self._get_csvs()
-        train = None
-        val = None
-        test = None
         
         if len(sets) == 0:
             self._split_data()
@@ -116,9 +111,14 @@ class Dataset:
             for i in range(len(set)):
                 img = set[i][0]
                 seg = set[i][1]
-                imgs.append(img[-33:])
-                segs.append(seg[-31:])
+                if self.modality == 'flair':
+                    imgs.append(img[-33:])
+                elif self.modality == 't1c':
+                    imgs.append(img[-31:])
+                elif self.modality == 't2':
+                    imgs.append(img[-30:])
 
+                segs.append(seg[-31:])
             data = {'imgs': imgs, 'segs': segs}
             df_test = pd.DataFrame(data)
             if idx == 0:
@@ -164,13 +164,14 @@ class Dataset:
                 img = image_array[:, :, slice]
                 img = np.rot90(np.rot90(np.rot90(img)))
                 img = resize(img, (240, 240, 3), order=0, preserve_range=True, anti_aliasing=False)
-
+            
                 if ('seg' in path.parts[-1]):
                     img[img == 1] = 1
                     img[img == 2] = 2
                     img[img == 4] = 3
                     output_tissue = output_label + 'seg/'
 
+                    filename = output_tissue + patient + '_slice{:03d}'.format(slice) + '.png'
                     if not os.path.exists(output_tissue):
                         os.makedirs(output_tissue)
                         print("Created ouput directory: " + output_tissue)
@@ -178,43 +179,43 @@ class Dataset:
                     mask_gray = cv2.cvtColor(img.astype('float32'), cv2.COLOR_RGB2GRAY)
                     # not black image
                     if not cv2.countNonZero(mask_gray) == 0:
-                        imageio.imwrite(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png',
-                                        img.astype(np.uint8))
+                        save_img(filename, img, scale=False)
 
                 if ('flair' in path.parts[-1]):
                     output_tissue = output_label + 'flair/'
-
+                    filename = output_tissue + patient + '_slice{:03d}'.format(slice) + '.png'
                     if not os.path.exists(output_tissue):
                         os.makedirs(output_tissue)
                         print("Created ouput directory: " + output_tissue)
 
-                    save_img(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png', img, scale=True)
+                    save_img(filename, img, scale=True)
 
                 if ('t1' in path.parts[-1]):
                     output_tissue = output_label + 't1/'
-
+                    filename = output_tissue + patient + '_slice{:03d}'.format(slice) + '.png'
                     if not os.path.exists(output_tissue):
                         os.makedirs(output_tissue)
                         print("Created ouput directory: " + output_tissue)
 
-                    save_img(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png', img, scale=True)
+                    save_img(filename, img, scale=True)
 
                 if ('t1ce' in path.parts[-1]):
                     output_tissue = output_label + 't1c/'
-
+                    filename = output_tissue + patient + '_slice{:03d}'.format(slice) + '.png'
                     if not os.path.exists(output_tissue):
                         os.makedirs(output_tissue)
                         print("Created ouput directory: " + output_tissue)
 
-                    save_img(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png', img, scale=True)
+                    save_img(filename, img, scale=True)
 
                 if ('t2' in path.parts[-1]):
                     output_tissue = output_label + 't2/'
+                    filename = output_tissue + patient + '_slice{:03d}'.format(slice) + '.png'
                     if not os.path.exists(output_tissue):
                         os.makedirs(output_tissue)
                         print("Created ouput directory: " + output_tissue)
 
-                    save_img(output_tissue + patient + '_slice{:03d}'.format(slice) + '.png', img, scale=True)
+                    save_img(filename, img, scale=True)
 
             printProgressBar(c + 1, amount, prefix='Progress:', suffix='Complete', length=50)
             c += 1
@@ -251,17 +252,10 @@ class Dataset:
                     count += 1
                 idx += 1
 
-            print('    ------------')
-            print('    Before deleting: ', count)
-
             count2 = 0
             for img in images_filters:
                 if not img in tumors_filter:
                     count2 += 1
-
-            print('    After deleting: ', count2)
-
-
         print('<< Done!\n')
 
     def get_data(self):
@@ -269,10 +263,11 @@ class Dataset:
 
 
 class DataGenerator(tf.keras.utils.Sequence):
-    def __init__(self, tuples, img_size=(128, 128), batch_size=1):
+    def __init__(self, tuples, img_size=(128, 128), batch_size=1, one_hot=True, classes=4):
         self.input_img_paths = [tuples[i][0] for i in range(len(tuples))]
         self.target_img_paths = [tuples[i][1] for i in range(len(tuples))]
-
+        self.classes = classes
+        self.onehot = one_hot
         self.batch_size = batch_size
         self.img_size = img_size
 
@@ -295,12 +290,22 @@ class DataGenerator(tf.keras.utils.Sequence):
             img = img.reshape(self.img_size[0], self.img_size[1], 1)
             x.append(img)
 
-        for j, path in enumerate(batch_target_img_paths):
-            img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
-            img = cv2.resize(img, (self.img_size[0], self.img_size[1]))
-            y.append(tf.one_hot(img.astype(np.int64), 4))
+        if self.onehot:
+            for j, path in enumerate(batch_target_img_paths):
+                img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+                img = cv2.resize(img, (self.img_size[0], self.img_size[1]))
+                y.append(tf.one_hot(img.astype(np.int64), self.classes))
 
-        return np.array(x), np.array(y)
+            return np.array(x), np.array(y)
+
+        else:
+            y = np.zeros((self.batch_size,) + self.img_size + (1,), dtype="float32")
+            for j, path in enumerate(batch_target_img_paths):
+                img = load_img(path, target_size=self.img_size, color_mode="grayscale")
+                y[j] = np.expand_dims(img, 2)
+                
+            return np.array(x), y
+
 
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
