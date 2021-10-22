@@ -136,3 +136,5 @@ dmypy.json
 *.h5
 *.png
 /logs
+testes.ipynb
+main.py
