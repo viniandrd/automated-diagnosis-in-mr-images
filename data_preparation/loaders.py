@@ -251,15 +251,10 @@ class Dataset:
                     count += 1
                 idx += 1
 
-            print('    ------------')
-            print('    Before deleting: ', count)
-
             count2 = 0
             for img in images_filters:
                 if not img in tumors_filter:
                     count2 += 1
-
-            print('    After deleting: ', count2)
 
 
         print('<< Done!\n')
@@ -269,10 +264,11 @@ class Dataset:
 
 
 class DataGenerator(tf.keras.utils.Sequence):
-    def __init__(self, tuples, img_size=(128, 128), batch_size=1):
+    def __init__(self, tuples, img_size=(128, 128), batch_size=1, classes=4):
         self.input_img_paths = [tuples[i][0] for i in range(len(tuples))]
         self.target_img_paths = [tuples[i][1] for i in range(len(tuples))]
 
+        self.classes = classes
         self.batch_size = batch_size
         self.img_size = img_size
 
@@ -291,14 +287,17 @@ class DataGenerator(tf.keras.utils.Sequence):
         for j, path in enumerate(batch_input_img_paths):
             img = load_img(path, target_size=self.img_size, color_mode="grayscale")
             img_arr = np.array(img)
+            img_arr = img_arr / float(255)
             img = np.resize(img_arr, self.img_size)
             img = img.reshape(self.img_size[0], self.img_size[1], 1)
+            maior = np.max(img) if np.max(img) > 0 else 1
+            img = img/maior
             x.append(img)
 
         for j, path in enumerate(batch_target_img_paths):
             img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
             img = cv2.resize(img, (self.img_size[0], self.img_size[1]))
-            y.append(tf.one_hot(img.astype(np.int64), 4))
+            y.append(tf.one_hot(img.astype(np.int64), self.classes))
 
         return np.array(x), np.array(y)
 
