@@ -9,6 +9,7 @@ from skimage.transform import resize
 from pathlib import Path
 from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.preprocessing.image import save_img
+import random
 
 class Dataset:
     def __init__(self, path, images_path, modality='flair', extract=True, initial_slice=0, final_slice=155, train_split=0.8,
@@ -34,7 +35,6 @@ class Dataset:
 
         self._filter()
         self._get_sets()
-        #TODO salvar os caminhos no csv só a partir do HGG/+/ e LGG/+
 
     def _get_csvs(self):
         print('>> Searching for sets in csv format..')
@@ -99,7 +99,7 @@ class Dataset:
                 imgs.append(str(path))
 
         tuples = list(zip(imgs, segs))
-
+        random.shuffle(tuples)
         self.train = tuples[:int(len(tuples) * self.train_split)]
         self.val = tuples[int(len(tuples) * self.train_split):int(len(tuples) * self.test_split)]
         self.test = tuples[int(len(tuples) * self.val_split):]
@@ -264,10 +264,10 @@ class Dataset:
 
 
 class DataGenerator(tf.keras.utils.Sequence):
-    def __init__(self, tuples, img_size=(128, 128), batch_size=1, classes=4):
+    def __init__(self, tuples, img_size=(128, 128), batch_size=8, classes=4):
+        #random.shuffle(tuples)
         self.input_img_paths = [tuples[i][0] for i in range(len(tuples))]
         self.target_img_paths = [tuples[i][1] for i in range(len(tuples))]
-
         self.classes = classes
         self.batch_size = batch_size
         self.img_size = img_size

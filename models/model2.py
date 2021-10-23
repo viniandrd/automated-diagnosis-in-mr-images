@@ -15,9 +15,8 @@ from tensorflow.keras.losses import mse
 import segmentation_models as sm
 import numpy as np
 import tensorflow as tf
-
+from metrics.custom_metrics import *
 from config import config as cfg
-
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 K.set_image_data_format("channels_last")
 
@@ -26,7 +25,7 @@ class CustomMeanIOU(tf.keras.metrics.MeanIoU):
     def update_state(self, y_true, y_pred, sample_weight=None):
         return super().update_state(tf.argmax(y_true, axis=-1), tf.argmax(y_pred, axis=-1), sample_weight)
 
-def unet_model(input_shape, modified_unet=True, learning_rate=0.01, start_channel=64,
+def unet_model(input_shape, modified_unet=True, learning_rate=0.02, start_channel=64,
                number_of_levels=3, inc_rate=2, output_channels=cfg['classes'], saved_model_dir=None):
     """
     Builds UNet model
@@ -83,7 +82,8 @@ def unet_model(input_shape, modified_unet=True, learning_rate=0.01, start_channe
         print("the model weights were successfully loaded!")
 
     sgd = SGD(lr=learning_rate, momentum=0.9, decay=0)
-    model.compile(optimizer=sgd,metrics=[sm.metrics.f1_score, CustomMeanIOU(4, dtype=np.float32)], loss=custom_loss)
+    opt = tf.keras.optimizers.Adam(learning_rate)
+    model.compile(optimizer=sgd, metrics=[sm.metrics.f1_score, CustomMeanIOU(4, dtype=np.float32)], loss=sm.losses.dice_loss)
     # model.save('modelo.json')
 
     return model
