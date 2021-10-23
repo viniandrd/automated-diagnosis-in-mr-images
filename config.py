@@ -4,10 +4,10 @@ config = dict()
 config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
 
 # Path for images extraction
-config['images_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19 PNG 70-120 4/'
+config['images_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19 PNG 70-120/'
 
 # Which MR modality extract
-config['modality'] = 't1c'
+config['modality'] = 'flair'
 
 # Extract slices starting from
 config['initial_slice'] = 70
@@ -22,7 +22,7 @@ config['input_shape'] = (None, None, 1)
 config['epochs'] = 100
 
 # Batch size
-config['batch_size'] = 16
+config['batch_size'] = 8
 
 # Path to save results (weights, training history, graphics)
 config['save_dir'] = ''
