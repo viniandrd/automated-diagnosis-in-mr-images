@@ -251,15 +251,10 @@ class Dataset:
                     count += 1
                 idx += 1
 
-            print('    ------------')
-            print('    Before deleting: ', count)
-
             count2 = 0
             for img in images_filters:
                 if not img in tumors_filter:
                     count2 += 1
-
-            print('    After deleting: ', count2)
 
 
         print('<< Done!\n')
