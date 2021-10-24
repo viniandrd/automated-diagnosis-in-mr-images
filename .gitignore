@@ -135,6 +135,5 @@ dmypy.json
 /test_set
 *.h5
 *.png
-/logs
 testes.ipynb
 main.py
