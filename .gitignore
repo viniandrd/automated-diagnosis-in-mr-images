@@ -133,8 +133,6 @@ dmypy.json
 
 # Project
 /test_set
-*.h5
-*.png
 testes.ipynb
 main.ipynb
 /output
