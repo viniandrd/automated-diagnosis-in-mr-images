@@ -3,7 +3,7 @@ config = dict()
 # BraTS19 dataset path (extracted once)
 config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
 
-# Path for images extraction
+# Path for images extraction (if not exists, will be created)
 config['images_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19 PNG 70-120/'
 
 # Which MR modality extract
@@ -28,10 +28,10 @@ config['batch_size'] = 8
 config['save_dir'] = ''
 
 # Input shape of the models
-config['image_shape'] = (128, 128)
+config['image_size'] = (128, 128)
 
 # Classes of the mask
 config['classes'] = 4
 
-# Ouput for saving ground truth of test set
-config['out_test'] = './test_set/'
+# Path to folder where it contains predictions from model2
+config['predictions'] = '../predictions/'
