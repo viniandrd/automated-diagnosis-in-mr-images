@@ -1,10 +1,6 @@
 from data_manipulation.loaders import *
 from pathlib import Path
 from config import config as cfg
-from pathlib import Path
-
-from config import config as cfg
-from data_manipulation.loaders import *
 
 
 class IoU():
@@ -23,10 +19,11 @@ class IoU():
         return gts
 
     def iou_result(self, ff):
+        acc_iou = 0
         for index in range(self.total_segs):
-            pred_m2 = read_img(self.preds_m2[index], cfg['image_size'])
-            pred_m3 = read_img(self.preds_m3[index], cfg['image_size'])
-            gt = read_img(self.gts[index])
+            pred_m2 = read_img(str(self.preds_m2[index]), cfg['image_size'])
+            pred_m3 = read_img(str(self.preds_m3[index]), cfg['image_size'])
+            gt = read_img(str(self.gts[index]), cfg['image_size'])
 
             img_res = result_image(weighted_image(pred_m2, ff[0]), weighted_image(pred_m3, ff[1]))
             acc_iou = acc_iou + self.iou_coef(img_res, gt)

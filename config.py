@@ -34,4 +34,4 @@ config['image_size'] = (128, 128)
 config['classes'] = 4
 
 # Path to folder where it contains predictions from model2
-config['predictions'] = '../predictions/'
+config['predictions'] = './predictions/'
