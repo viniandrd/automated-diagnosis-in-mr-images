@@ -5,7 +5,7 @@ from tensorflow.keras import Input
 from tensorflow.keras.layers import Conv2D, PReLU, UpSampling2D, concatenate, Reshape, Dense, Permute, MaxPool2D
 from tensorflow.keras.layers import GlobalAveragePooling2D, Activation, add, GaussianNoise, BatchNormalization, multiply
 from tensorflow.keras.optimizers import SGD
-from losses.custom_loss import custom_loss
+from custom_objects.custom_loss import custom_loss
 import segmentation_models as sm
 import os
 from glob import glob
@@ -15,7 +15,7 @@ from tensorflow.keras.losses import mse
 import segmentation_models as sm
 import numpy as np
 import tensorflow as tf
-from metrics.custom_metrics import *
+from custom_objects.custom_metrics import *
 from config import config as cfg
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 K.set_image_data_format("channels_last")

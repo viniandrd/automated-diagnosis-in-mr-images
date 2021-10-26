@@ -1,7 +1,6 @@
 import tensorflow.keras.backend as K
 from tensorflow.keras.losses import categorical_crossentropy
 
-
 def generalized_dice(y_true, y_pred):
     
     """

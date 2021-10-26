@@ -7,7 +7,7 @@ from tensorflow.keras import initializers
 from config import config as cfg
 
 import numpy as np
-from metrics.custom_metrics import *
+from custom_objects.custom_metrics import *
 import segmentation_models as sm
 
 def dice_coef(y_true, y_pred, smooth=1.0):
