@@ -1,94 +1,101 @@
-import math
+import random, math
+from metrics.custom_metrics import * 
 
-from metrics.iou_metric import *
+from config import config as cfg
+import numpy as np
 
-DECIMAL = 2
+class FireflyOptimization():
+    def __init__(self, d, n, gamma, alpha, beta, generations):
+        """
+        :param d: number of pipelines (weights)
+        :param n: number of agents
+        :param gamma: absorption coefficient
+        :param alpha: random
+        :param beta: attraction factor
+        :param maxGeneration: number of max generation
+        :return: best firefly
+        """
+        self.d = d
+        self.n = n
+        self.gamma = gamma
+        self.alpha = alpha
+        self.beta = beta
+        self.generations = generations
+        self.DECIMAL = 2
+        self.t = 0
+        self.alpha_t = 0
+        random.seed(0)
+        bests = [0.0] * self.d
 
+        self.metric = IoU()
+        self.fireflies = []
+        self.z = [0.0] * self.d
+        self.ff_dis = []
 
-def firefly(d, n, gamma, alpha, beta, maxGeneration):
-    """
-    :param d: number of pipelines (weights)
-    :param n: number of agents
-    :param gamma: absorption coefficient
-    :param alpha: random
-    :param beta: attraction factor
-    :param maxGeneration: number of max generation
-    :return: best firefly
-    """
-    t = 0
-    alpha_t = 1.0
-    random.seed(0)
-    metric = IoU()
-    bests = [0.0] * d
+        self.__first_solution()
+        self.__optimize()
 
-    fireflies = []
-    z = [0.0] * n  # Result metric vector
-    ff_dis = []  # Distance vector
+    def __optimize(self):
+        while self.t < self.generations:
+            for i in range(self.n):
+                self.z[i] = -self.metric.iou_result(self.fireflies[i])
 
-    # Initial solution
-    for i in range(n):
-        ff = create_firefly(d)
-        fireflies.append(ff)
+            index = np.argsort(self.z)
 
-        lin = [0.0] * n
-        ff_dis.append(lin)
+            self.z.sort()
+            self.z = [-x for x in self.z]
 
-    print(f'Conjunto inicial: {fireflies}')
-    while t < maxGeneration:
-        for i in range(n):
-            # Metric results
-            z[i] = -metric.iou_result(fireflies[i])
+            rank = [0.0] * self.n
+            for i in range(self.n):
+                rank[i] = self.fireflies[index[i]]
 
-        # Index by results
-        indice = np.argsort(z)
+            self.fireflies = rank
 
-        # Sort results
-        z.sort()
-        z = [-x for x in z]
+            for i in range(self.n):
+                for j in range(self.n):
+                    self.ff_dis[i][j] = self.__dist(self.fireflies[i], self.fireflies[j])
 
-        # Rank firefly by intensity
-        rank = [0.0] * n
-        for i in range(n):
-            rank[i] = fireflies[indice[i]]
+            self.alpha_t = self.alpha * self.alpha_t
 
-        fireflies = rank
+            for i in range(self.n):
+                for j in range(self.n):
+                    if self.z[i] < self.z[j]:
+                        ff = self.__create_firefly(self.d)
+                        beta_t = self.beta * math.exp(-self.gamma * ((self.ff_dis[i][j]) ** 2))
 
-        for i in range(n):
-            for j in range(n):
-                ff_dis[i][j] = dist(fireflies[i], fireflies[j])
+                        if i != self.n - 1:
+                            for k in range(self.d):
+                                self.fireflies[i][k] = round( (1 - beta_t) * self.fireflies[i][k] + beta_t *
+                                                            self.fireflies[i][k] + self.alpha_t * ff[k] /
+                                                            (1 + self.alpha_t), self.DECIMAL)
 
-        alpha_t = alpha * alpha_t
-        for i in range(n):
-            for j in range(n):
-                if z[i] < z[j]:
-                    ff = create_firefly(d)
-                    beta_t = beta * math.exp(-gamma * ((ff_dis[i][j]) ** 2))
-                    if i != n - 1:
-                        for k in range(d):
-                            fireflies[i][k] = round(
-                                ((1 - beta_t) * fireflies[i][k] + beta_t * fireflies[j][k] + alpha_t * ff[k]) / (
-                                        1 + alpha_t), DECIMAL)
-        bests = fireflies[0]
-        t += 1
-        print(f'{t} - Solucao de pesos: {fireflies}')
-        print(f'IoU: {z}')
+            bests = self.fireflies[0]
+            self.t += 1
+            print(f'Optimized weights solution for gen. = {self.t}: {self.fireflies}')
+            return bests
 
-    return bests
+    def __dist(self, a, b):
+        d = 0
+        for k in range(len(a)):
+            d += (a[k] - b[k]) ** 2
+        
+        d = math.sqrt(d)
 
+        return d
 
-# Create a firefly with random weights
-def create_firefly(n):
-    ff = [random.random() for i in range(n)]
-    ssum = sum(ff)
-    ff = [i / ssum for i in ff]
-    ff = [round(i, DECIMAL) for i in ff]
-    return ff
+    def __first_solution(self):
+        for i in range(self.n):
+            firefly = self.__create_firefly(self.d)
+            self.fireflies.append(firefly)
 
-
-# Calculate distance
-def dist(a, b):
-    d = 0
-    for k in range(len(a)):
-        d += (a[k] - b[k]) ** 2
-    d = math.sqrt(d)
-    return d
+            lin = [0.0] * self.n
+            self.ff_dis.append(lin)
+        
+        print(f'First solution: {self.fireflies}')
+    
+    def __create_firefly(self, n):
+        ff = [random.random() for i in range(n)]
+        ssum = sum(ff)
+        ff = [i / ssum for i in ff]
+        ff = [round(i, self.DECIMAL) for i in ff]
+        return ff
