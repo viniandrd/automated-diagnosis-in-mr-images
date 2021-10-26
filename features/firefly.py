@@ -25,7 +25,7 @@ class FireflyOptimization():
         self.t = 0
         self.alpha_t = 0
         random.seed(0)
-        bests = [0.0] * self.d
+        self.bests = [0.0] * self.d
 
         self.metric = IoU()
         self.fireflies = []
