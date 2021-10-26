@@ -69,10 +69,10 @@ class FireflyOptimization():
                                                             self.fireflies[i][k] + self.alpha_t * ff[k] /
                                                             (1 + self.alpha_t), self.DECIMAL)
 
-            bests = self.fireflies[0]
+            self.bests = self.fireflies[0]
             self.t += 1
             print(f'Optimized weights solution for gen. = {self.t}: {self.fireflies}')
-            return bests
+            return self.bests
 
     def __dist(self, a, b):
         d = 0
