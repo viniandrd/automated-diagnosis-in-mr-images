@@ -25,9 +25,9 @@ class IoU():
         return gts
 
     def iou_result(self, ff):
-        metric = tf.keras.metrics.MeanIoU(cfg['classes'])
         metrics = []
         for i in range(self.total_segs):
+            metric = tf.keras.metrics.MeanIoU(cfg['classes'])
             pred_m2 = load_img(self.preds_m2[i], target_size=cfg['image_size'], color_mode="grayscale")
             pred_m2 = np.array(pred_m2)
 
@@ -38,7 +38,8 @@ class IoU():
             gt = np.array(gt)
 
             img_res = result_image(weighted_image(pred_m2, ff[0]), weighted_image(pred_m3, ff[1]))
-            metrics.append(metric.update_state(gt, img_res))
+            metric.update_state(gt, img_res)
+            metrics.append(metric.result().numpy())
 
         metrics = np.array(metrics)
         return metrics.mean()
