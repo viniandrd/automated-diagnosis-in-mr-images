@@ -170,7 +170,6 @@ class Dataset:
                 img = image_array[:, :, slice]
                 img = np.rot90(np.rot90(np.rot90(img)))
                 img = resize(img, (240, 240, 3), order=0, preserve_range=True, anti_aliasing=False)
-
                 if ('seg' in path.parts[-1]):
                     img[img == 1] = 1
                     img[img == 2] = 2
@@ -363,8 +362,9 @@ def weighted_image(img, w):
     col = np.size(img_c, 1)
     for n in range(lin):
         for m in range(col):
-            for k in range(len(img_c[n][m])):
-                img_c[n][m][k] = img_c[n][m][k] * w
+            img_c[n][m] = img_c[n][m] * w
+            #for k in range(len(img_c[n][m])):
+                #img_c[n][m][k] = img_c[n][m][k] * w
 
     return img_c
 
@@ -376,6 +376,7 @@ def result_image(img1, img2):
 
     for n in range(lin):
         for m in range(col):
-            for k in range(len(res[n][m])):
-                res[n][m][k] = img1[n][m][k] + img2[n][m][k]
+            res[n][m] = img1[n][m] + img2[n][m]
+            #for k in range(len(res[n][m])):
+                #res[n][m][k] = img1[n][m][k] + img2[n][m][k]
     return res

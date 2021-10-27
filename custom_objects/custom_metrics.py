@@ -29,13 +29,13 @@ class IoU():
         metrics = []
         for i in range(self.total_segs):
             pred_m2 = load_img(self.preds_m2[i], target_size=cfg['image_size'], color_mode="grayscale")
-            pred_m2 = np.asarray(pred_m2)
+            pred_m2 = np.array(pred_m2)
 
             pred_m3 = load_img(self.preds_m3[i], target_size=cfg['image_size'], color_mode="grayscale")
-            pred_m3 = np.asarray(pred_m3)
+            pred_m3 = np.array(pred_m3)
 
             gt = load_img(self.gts[i], target_size=(128,128), color_mode="grayscale")
-            gt = np.asarray(gt)
+            gt = np.array(gt)
 
             img_res = result_image(weighted_image(pred_m2, ff[0]), weighted_image(pred_m3, ff[1]))
             metrics.append(metric.update_state(gt, img_res))
