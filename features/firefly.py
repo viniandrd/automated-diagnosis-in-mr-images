@@ -21,7 +21,7 @@ class FireflyOptimization():
         self.alpha = alpha
         self.beta = beta
         self.generations = generations
-        self.DECIMAL = 2
+        self.DECIMAL = 5
         self.t = 0
         self.alpha_t = 0
         self.bests = [0.0] * self.d

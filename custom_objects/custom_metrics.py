@@ -3,6 +3,7 @@ from data_manipulation.loaders import *
 from pathlib import Path
 from config import config as cfg
 from tensorflow.keras.preprocessing.image import load_img
+import cv2
 
 class CustomMeanIOU(tf.keras.metrics.MeanIoU):
     def update_state(self, y_true, y_pred, sample_weight=None):
@@ -11,8 +12,8 @@ class CustomMeanIOU(tf.keras.metrics.MeanIoU):
 
 class IoU():
     def __init__(self):
-        self.preds_m2 = [path for path in Path(cfg['predictions']).rglob('*.png') if 'model2' in str(path.parent)]
-        self.preds_m3 = [path for path in Path(cfg['predictions']).rglob('*.png') if 'model3' in str(path.parent)]
+        self.preds_m2 = [str(path) for path in Path(cfg['predictions']).rglob('*.png') if 'model2' in str(path.parent)]
+        self.preds_m3 = [str(path) for path in Path(cfg['predictions']).rglob('*.png') if 'model3' in str(path.parent)]
         self.gts = self._get_gts()
 
         self.total_segs = len(self.gts)
@@ -26,22 +27,31 @@ class IoU():
 
     def iou_result(self, ff):
         metrics = []
+        metric = CustomMeanIOU(cfg['classes'])
         for i in range(self.total_segs):
-            metric = tf.keras.metrics.MeanIoU(cfg['classes'])
-            pred_m2 = load_img(self.preds_m2[i], target_size=cfg['image_size'], color_mode="grayscale")
-            pred_m2 = np.array(pred_m2)
+            if i % 500 == 0:
+                print(i)
 
-            pred_m3 = load_img(self.preds_m3[i], target_size=cfg['image_size'], color_mode="grayscale")
-            pred_m3 = np.array(pred_m3)
+            pred_m2 = cv2.imread(self.preds_m2[i], cv2.IMREAD_GRAYSCALE)
+            pred_m2 = cv2.resize(pred_m2, cfg['image_size'])
 
-            gt = load_img(self.gts[i], target_size=(128,128), color_mode="grayscale")
-            gt = np.array(gt)
+            pred_m3 = cv2.imread(self.preds_m3[i], cv2.IMREAD_GRAYSCALE)
+            pred_m3 = cv2.resize(pred_m3, cfg['image_size'])
+
+            gt = cv2.imread(self.gts[i], cv2.IMREAD_GRAYSCALE)
+            gt = cv2.resize(gt, cfg['image_size'])
+            gt = tf.one_hot(gt.astype(np.int64), 4)
 
             img_res = result_image(weighted_image(pred_m2, ff[0]), weighted_image(pred_m3, ff[1]))
+            img_res = tf.one_hot(img_res.astype(np.int64), 4)
             metric.update_state(gt, img_res)
             metrics.append(metric.result().numpy())
 
         metrics = np.array(metrics)
+        print('--')
+        print(f'Weights: {ff}')
+        print(f'Avg meanIoU: {metrics.mean()}')
+
         return metrics.mean()
 
     def iou_coef(self, img_pred, img_true):

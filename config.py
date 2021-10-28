@@ -4,7 +4,7 @@ config = dict()
 config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
 
 # Path for images extraction (if not exists, will be created)
-config['images_path'] = 'E:/BraTS19 Old/'
+config['images_path'] = 'D:\ViniAndrade\TCC\ConjuntodeDados\BraTS19 PNG 70-120/'
 
 # Which MR modality extract
 config['modality'] = 'flair'
@@ -34,4 +34,4 @@ config['image_size'] = (128, 128)
 config['classes'] = 4
 
 # Path to folder where it contains predictions from model2
-config['predictions'] = './predictions/'
+config['predictions'] = 'E:/predictions/'
