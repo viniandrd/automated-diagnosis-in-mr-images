@@ -4,7 +4,7 @@ config = dict()
 config['dataset_path'] = ''
 
 # Path for images extraction (if not exists, will be created)
-config['images_path'] = ''
+config['images_path'] = r'D:\Dados\ViniAndrade\TCC\BraTS19\BraTS19 PNG/'
 
 # Which MR modality extract
 config['modality'] = 'flair'
