@@ -12,7 +12,7 @@ import segmentation_models as sm
 K.set_image_data_format("channels_last")
 
  #u-net model
-class Unet_model(object):
+class Unet_model1(object):
     
     def __init__(self,img_shape,load_model_weights=None):
         self.img_shape=img_shape

@@ -11,12 +11,12 @@ from config import config as cfg
 
 SM_FRAMEWORK=tf.keras
 
-def unet_backbone_resnet34_jaccard_loss():
+def unet_backbone_resnet34_bce_jaccard_loss():
     unet_model = sm.Unet('resnet34', classes=cfg['classes'], activation='softmax',input_shape=cfg['input_shape'], encoder_weights=None)
 
     unet_model.compile(
         'Adam',
-        loss=sm.losses.jaccard_loss,
+        loss=sm.losses.losses.bce_jaccard_loss,
         metrics=[CustomMeanIOU(cfg['classes'], dtype=np.float32),sm.metrics.f1_score],
     )
     return unet_model

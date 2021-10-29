@@ -132,7 +132,4 @@ dmypy.json
 /.idea
 
 # Project
-testes.ipynb
-main.ipynb
-main.py
 *.h5
