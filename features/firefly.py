@@ -23,7 +23,7 @@ class FireflyOptimization():
         self.generations = generations
         self.DECIMAL = 5
         self.t = 0
-        self.alpha_t = 0
+        self.alpha_t = 1.0
         self.bests = [0.0] * self.d
 
         self.metric = IoU()
@@ -64,8 +64,8 @@ class FireflyOptimization():
 
                         if i != self.n - 1:
                             for k in range(self.d):
-                                self.fireflies[i][k] = round( (1 - beta_t) * self.fireflies[i][k] + beta_t *
-                                                            self.fireflies[i][k] + self.alpha_t * ff[k] /
+                                self.fireflies[i][k] = round( ((1 - beta_t) * self.fireflies[i][k] + beta_t *
+                                                            self.fireflies[j][k] + self.alpha_t * ff[k]) /
                                                             (1 + self.alpha_t), self.DECIMAL)
 
             self.bests = self.fireflies[0]
