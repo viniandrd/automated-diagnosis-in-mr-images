@@ -16,7 +16,7 @@ def unet_backbone_resnet34_bce_jaccard_loss():
 
     unet_model.compile(
         'Adam',
-        loss=sm.losses.losses.bce_jaccard_loss,
+        loss=sm.losses.bce_jaccard_loss,
         metrics=[CustomMeanIOU(cfg['classes'], dtype=np.float32),sm.metrics.f1_score],
     )
     return unet_model
