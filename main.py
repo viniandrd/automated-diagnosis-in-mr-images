@@ -4,7 +4,9 @@ from custom_objects.custom_loss import *
 from custom_objects.custom_metrics import *
 from models.model1 import *
 from models.model2 import *
-from models.model2 import *
+from models.model3 import *
+import datetime
+import tensorflow as tf
 
 physical_devices = tf.config.list_physical_devices('GPU')
 tf.config.experimental.set_memory_growth(physical_devices[0], True)
@@ -36,7 +38,7 @@ elif cfg['model'] == 2:
 else:
     model = unet_backbone_resnet34_bce_jaccard_loss()
 
-history = model.fit(train_generator, validation_data=val_generator, 
+history = model.fit(train_gen, validation_data=val_gen, 
                     steps_per_epoch=steps_per_epoch_train, validation_steps = steps_per_epoch_val,
                     epochs = cfg['epochs'], callbacks=[tensorboard_callback])
 
