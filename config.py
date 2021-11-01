@@ -42,5 +42,5 @@ config['image_size'] = (128, 128)
 # Classes of the mask
 config['classes'] = 4
 
-# Path to folder where it contains predictions from model2
+# Path to folder where it contains predictions from models
 config['predictions'] = 'E:/predictions/'
