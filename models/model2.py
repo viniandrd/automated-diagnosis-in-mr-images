@@ -25,7 +25,7 @@ class CustomMeanIOU(tf.keras.metrics.MeanIoU):
     def update_state(self, y_true, y_pred, sample_weight=None):
         return super().update_state(tf.argmax(y_true, axis=-1), tf.argmax(y_pred, axis=-1), sample_weight)
 
-def unet_model(input_shape, modified_unet=True, learning_rate=0.02, start_channel=64,
+def Unet_model2(input_shape, modified_unet=True, learning_rate=0.02, start_channel=64,
                number_of_levels=3, inc_rate=2, output_channels=cfg['classes'], saved_model_dir=None):
     """
     Builds UNet model
