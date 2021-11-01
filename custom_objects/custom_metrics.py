@@ -12,6 +12,7 @@ class CustomMeanIOU(tf.keras.metrics.MeanIoU):
 
 class IoU():
     def __init__(self):
+        self.preds_m1 = [str(path) for path in Path(cfg['predictions']).rglob('*.png') if 'model1' in str(path.parent)]
         self.preds_m2 = [str(path) for path in Path(cfg['predictions']).rglob('*.png') if 'model2' in str(path.parent)]
         self.preds_m3 = [str(path) for path in Path(cfg['predictions']).rglob('*.png') if 'model3' in str(path.parent)]
         self.gts = self._get_gts()
@@ -32,6 +33,9 @@ class IoU():
             if i % 500 == 0:
                 print(i)
 
+            pred_m1 = cv2.imread(self.preds_m1[i], cv2.IMREAD_GRAYSCALE)
+            pred_m1 = cv2.resize(pred_m1, cfg['image_size'])
+
             pred_m2 = cv2.imread(self.preds_m2[i], cv2.IMREAD_GRAYSCALE)
             pred_m2 = cv2.resize(pred_m2, cfg['image_size'])
 
@@ -42,7 +46,7 @@ class IoU():
             gt = cv2.resize(gt, cfg['image_size'])
             gt = tf.one_hot(gt.astype(np.int64), 4)
 
-            img_res = result_image(weighted_image(pred_m2, ff[0]), weighted_image(pred_m3, ff[1]))
+            img_res = result_image(weighted_image(pred_m1, ff[0]), weighted_image(pred_m2, ff[1]), weighted_image(pred_m3, ff[2]))
             img_res = tf.one_hot(img_res.astype(np.int64), 4)
             metric.update_state(gt, img_res)
             metrics.append(metric.result().numpy())

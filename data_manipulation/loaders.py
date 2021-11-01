@@ -356,9 +356,9 @@ def weighted_image(img, w):
     return img
 
 
-def result_image(img1, img2):
+def result_image(img1, img2, img3):
     res = np.zeros((128,128))
     for n in range(img2.shape[0]):
         for m in range(img2.shape[1]):
-            res[n][m] = int((img1[n][m] + img2[n][m]) + 0.5)
+            res[n][m] = int((img1[n][m] + img2[n][m] + img3[n][m]) + 0.5)
     return res
