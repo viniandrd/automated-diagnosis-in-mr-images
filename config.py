@@ -1,7 +1,7 @@
 config = dict()
 
 # BraTS19 dataset path (extracted once)
-config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
+config['dataset_path'] = ''
 
 # Need to extract .nii files?
 config['extract'] = True
