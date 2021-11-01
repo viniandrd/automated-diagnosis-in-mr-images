@@ -1,7 +1,7 @@
 config = dict()
 
 # BraTS19 dataset path (extracted once)
-config['dataset_path'] = ''
+config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
 
 # Need to extract .nii files?
 config['extract'] = True
@@ -41,3 +41,6 @@ config['image_size'] = (128, 128)
 
 # Classes of the mask
 config['classes'] = 4
+
+# Path to folder where it contains predictions from model2
+config['predictions'] = 'E:/predictions/'

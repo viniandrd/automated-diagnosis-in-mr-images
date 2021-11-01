@@ -1,5 +1,5 @@
 import random, math
-from metrics.custom_metrics import * 
+from custom_objects.custom_metrics import * 
 
 from config import config as cfg
 import numpy as np
@@ -21,15 +21,14 @@ class FireflyOptimization():
         self.alpha = alpha
         self.beta = beta
         self.generations = generations
-        self.DECIMAL = 2
+        self.DECIMAL = 5
         self.t = 0
-        self.alpha_t = 0
-        random.seed(0)
+        self.alpha_t = 1.0
         self.bests = [0.0] * self.d
 
         self.metric = IoU()
         self.fireflies = []
-        self.z = [0.0] * self.d
+        self.z = [0.0] * self.n
         self.ff_dis = []
 
         self.__first_solution()
@@ -38,7 +37,7 @@ class FireflyOptimization():
     def __optimize(self):
         while self.t < self.generations:
             for i in range(self.n):
-                self.z[i] = -self.metric.iou_result(self.fireflies[i])
+                self.z[i] = - self.metric.iou_result(self.fireflies[i])
 
             index = np.argsort(self.z)
 
@@ -65,14 +64,16 @@ class FireflyOptimization():
 
                         if i != self.n - 1:
                             for k in range(self.d):
-                                self.fireflies[i][k] = round( (1 - beta_t) * self.fireflies[i][k] + beta_t *
-                                                            self.fireflies[i][k] + self.alpha_t * ff[k] /
+                                self.fireflies[i][k] = round( ((1 - beta_t) * self.fireflies[i][k] + beta_t *
+                                                            self.fireflies[j][k] + self.alpha_t * ff[k]) /
                                                             (1 + self.alpha_t), self.DECIMAL)
 
             self.bests = self.fireflies[0]
             self.t += 1
             print(f'Optimized weights solution for gen. = {self.t}: {self.fireflies}')
-            return self.bests
+            print(f'Metric avg: {self.z}')
+            print('--\n')
+        return self.bests
 
     def __dist(self, a, b):
         d = 0
