@@ -71,8 +71,8 @@ class FireflyOptimization():
                                                                 (1 + self.alpha_t), self.DECIMAL)
 
             self.bests = self.fireflies[0]
-            self.t += 1
             print(f'Optimized weights [0] solution for gen. = {self.t}: {self.fireflies[0]}')
+            self.t += 1
             print(f'Metric avg: {self.z[0]}')
             print('--\n')
         return self.bests
