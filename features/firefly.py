@@ -35,7 +35,8 @@ class FireflyOptimization():
         self.__optimize()
 
     def __optimize(self):
-        while self.t < self.generations:
+        random.seed(0)
+        while self.t <= self.generations:
             for i in range(self.n):
                 self.z[i] = - self.metric.iou_result(self.fireflies[i])
 
@@ -58,20 +59,21 @@ class FireflyOptimization():
 
             for i in range(self.n):
                 for j in range(self.n):
-                    if self.z[i] < self.z[j]:
-                        ff = self.__create_firefly(self.d)
-                        beta_t = self.beta * math.exp(-self.gamma * ((self.ff_dis[i][j]) ** 2))
+                    if i != j:
+                        if self.z[i] <= self.z[j]:
+                            ff = self.__create_firefly(self.d)
+                            beta_t = self.beta * math.exp(-self.gamma * ((self.ff_dis[i][j]) ** 2))
 
-                        if i != self.n - 1:
-                            for k in range(self.d):
-                                self.fireflies[i][k] = round( ((1 - beta_t) * self.fireflies[i][k] + beta_t *
-                                                            self.fireflies[j][k] + self.alpha_t * ff[k]) /
-                                                            (1 + self.alpha_t), self.DECIMAL)
+                            if i != self.n - 1:
+                                for k in range(self.d):
+                                    self.fireflies[i][k] = round( ((1 - beta_t) * self.fireflies[i][k] + beta_t *
+                                                                self.fireflies[j][k] + self.alpha_t * ff[k]) /
+                                                                (1 + self.alpha_t), self.DECIMAL)
 
             self.bests = self.fireflies[0]
             self.t += 1
-            print(f'Optimized weights solution for gen. = {self.t}: {self.fireflies}')
-            print(f'Metric avg: {self.z}')
+            print(f'Optimized weights [0] solution for gen. = {self.t}: {self.fireflies[0]}')
+            print(f'Metric avg: {self.z[0]}')
             print('--\n')
         return self.bests
 
@@ -92,7 +94,7 @@ class FireflyOptimization():
             lin = [0.0] * self.n
             self.ff_dis.append(lin)
         
-        print(f'First solution: {self.fireflies}')
+        print(f'First solution [0]: {self.fireflies[0]}')
     
     def __create_firefly(self, n):
         ff = [random.random() for i in range(n)]

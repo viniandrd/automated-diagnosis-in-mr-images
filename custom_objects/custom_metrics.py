@@ -28,9 +28,9 @@ class IoU():
 
     def iou_result(self, ff):
         metrics = []
-        metric = CustomMeanIOU(cfg['classes'])
+        metric = tf.keras.metrics.MeanIoU(num_classes=4)
         for i in range(self.total_segs):
-            if i % 500 == 0:
+            if(i % 500 == 0):
                 print(i)
 
             pred_m1 = cv2.imread(self.preds_m1[i], cv2.IMREAD_GRAYSCALE)
@@ -44,10 +44,20 @@ class IoU():
 
             gt = cv2.imread(self.gts[i], cv2.IMREAD_GRAYSCALE)
             gt = cv2.resize(gt, cfg['image_size'])
-            gt = tf.one_hot(gt.astype(np.int64), 4)
 
             img_res = result_image(weighted_image(pred_m1, ff[0]), weighted_image(pred_m2, ff[1]), weighted_image(pred_m3, ff[2]))
-            img_res = tf.one_hot(img_res.astype(np.int64), 4)
+            if img_res.max() > 3.0:
+                img_res = (img_res / img_res.max()) * 3.0
+            
+            img_res_sum = np.sum(img_res)
+            array_has_nan = np.isnan(img_res_sum)
+
+            if array_has_nan:
+                img_res = np.zeros(img_res.shape, dtype=img_res.dtype)
+
+
+            img_res = round_image(img_res)
+            img_res = img_res.astype(np.uint8)
             metric.update_state(gt, img_res)
             metrics.append(metric.result().numpy())
 
