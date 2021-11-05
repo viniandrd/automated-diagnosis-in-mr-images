@@ -3,10 +3,13 @@ config = dict()
 # BraTS19 dataset path (extracted once)
 config['dataset_path'] = 'D:/ViniAndrade/TCC/ConjuntodeDados/BraTS19/training/'
 
-# Path for images extraction (if not exists, will be created)
-config['images_path'] = 'D:\ViniAndrade\TCC\ConjuntodeDados\BraTS19 PNG 70-120/'
+# Need to extract .nii files?
+config['extract'] = True
 
-# Which MR modality extract
+# Path for PNG images (if not exists, will be created)
+config['images_path'] = ''
+
+# Which MR modality extract or which is extracted
 config['modality'] = 'flair'
 
 # Extract slices starting from
@@ -19,13 +22,19 @@ config['final_slice'] = 120
 config['input_shape'] = (None, None, 1)
 
 # Epochs for training models
-config['epochs'] = 100
+config['epochs'] = 300
 
 # Batch size
 config['batch_size'] = 8
 
 # Path to save results (weights, training history, graphics)
-config['save_dir'] = ''
+config['save_dir'] = './results/'
+
+# Path to save logs file (for Tensorboard only)
+config['logs_dir'] = './results/logs/'
+
+# Which model to train (1, 2 or 3)
+config['model'] = 1 
 
 # Input shape of the models
 config['image_size'] = (128, 128)

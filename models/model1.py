@@ -1,123 +1,116 @@
-from tensorflow.keras.models import *
-from tensorflow.keras.layers import *
-from tensorflow.keras.optimizers import *
-from tensorflow.keras import backend as K
-from tensorflow.keras.callbacks import ModelCheckpoint
-from tensorflow.keras import initializers
-from config import config as cfg
 
 import numpy as np
-from custom_objects.custom_metrics import *
+from tensorflow.keras.models import Model,load_model
+from tensorflow.keras.layers import PReLU, BatchNormalization, Conv2D, MaxPooling2D, Dropout, GaussianNoise, Input,Activation
+from tensorflow.keras.layers import Conv2DTranspose, UpSampling2D, concatenate, add
+from tensorflow.keras.optimizers import SGD
+import tensorflow.keras.backend as K
+from custom_objects.custom_loss import * 
+from custom_objects.custom_metrics import * 
 import segmentation_models as sm
 
-def dice_coef(y_true, y_pred, smooth=1.0):
-    ''' Dice Coefficient
+K.set_image_data_format("channels_last")
 
-    Args:
-        y_true (np.array): Ground Truth Heatmap (Label)
-        y_pred (np.array): Prediction Heatmap
-    '''
+ #u-net model
+class Unet_model1(object):
+    
+    def __init__(self,img_shape,load_model_weights=None):
+        self.img_shape=img_shape
+        self.load_model_weights=load_model_weights
+        self.model = self.compile_unet()
+        
+    
+    def compile_unet(self):
+        """
+        compile the U-net model
+        """      
+        model = self.unet(self.img_shape)
+        sgd = SGD(lr=0.08, momentum=0.9, decay=5e-6, nesterov=False)
+        model.compile(loss=sm.losses.dice_loss, optimizer=sgd, metrics=[CustomMeanIOU(4, dtype=np.float32)])
+        
+        #load weights if set for prediction
+        if self.load_model_weights is not None:
+            model.load_weights(self.load_model_weights)
+        return model
 
-    class_num = 4
-    for i in range(class_num):
-        y_true_f = K.flatten(y_true[:,:,:,i])
-        y_pred_f = K.flatten(y_pred[:,:,:,i])
-        intersection = K.sum(y_true_f * y_pred_f)
-        loss = ((2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth))
-        if i == 0:
-            total_loss = loss
+
+    def unet(self, input_shape, nb_classes=4, start_ch=64, depth=3, inc_rate=2. ,activation='relu', dropout=0.0, batchnorm=True, upconv=True,format_='channels_last'):
+        """
+        the actual u-net architecture
+        """
+        X = Input(shape=input_shape)
+        x = GaussianNoise(0.01)(X) #add gaussian noise to the first layer to combat overfitting
+        x = Conv2D(64, 2, padding='same',data_format = 'channels_last')(x)
+        x = self.level_block(x, start_ch, depth, inc_rate,activation, dropout, batchnorm, upconv,format_)
+        x = BatchNormalization()(x) 
+        #o =  Activation('relu')(o)
+        x = PReLU(shared_axes=[1, 2])(x)
+        x = Conv2D(nb_classes, 1, padding='same',data_format = format_)(x)
+        out = Activation('softmax')(x)
+        
+        model = Model(inputs = X, outputs = out)
+
+        return model
+
+
+    def level_block(self,m, dim, depth, inc, acti, do, bn, up,format_="channels_last"):
+        if depth > 0:
+            n = self.res_block_enc(m,0.0,dim,acti, bn,format_)
+            #using strided 2D conv for donwsampling
+            m = Conv2D(int(inc*dim), 2,strides=2, padding='same',data_format = format_)(n)
+            m = self.level_block(m,int(inc*dim), depth-1, inc, acti, do, bn, up )
+            if up:
+                m = UpSampling2D(size=(2, 2),data_format = format_)(m)
+                m = Conv2D(dim, 2, padding='same',data_format = format_)(m)
+            else:
+                m = Conv2DTranspose(dim, 3, strides=2,padding='same',data_format = format_)(m)
+            n=concatenate([n,m])
+            #the decoding path
+            m = self.res_block_dec(n, 0.0,dim, acti, bn, format_)
         else:
-            total_loss = total_loss + loss
-    total_loss = total_loss / class_num
-    return total_loss
+            m = self.res_block_enc(m, 0.0,dim, acti, bn, format_)
+        return m
+
+  
+   
+    def res_block_enc(self,m, drpout,dim,acti, bn,format_="channels_last"):
+        
+        """
+        the encoding unit which a residual block
+        """
+        n = BatchNormalization()(m) if bn else n
+        #n=  Activation(acti)(n)
+        n=PReLU(shared_axes=[1, 2])(n)
+        n = Conv2D(dim, 3, padding='same',data_format = format_)(n)
+                
+        n = BatchNormalization()(n) if bn else n
+        #n=  Activation(acti)(n)
+        n=PReLU(shared_axes=[1, 2])(n)
+        n = Conv2D(dim, 3, padding='same',data_format =format_ )(n)
+
+        n=add([m,n]) 
+        
+        return  n 
 
 
-def dice_coef_loss(y_true, y_pred):
-    ''' Dice Coefficient Loss
 
-    Args:
-        y_true (np.array): Ground Truth Heatmap (Label)
-        y_pred (np.array): Prediction Heatmap
-    '''
-    return 1-dice_coef(y_true, y_pred)
+    def res_block_dec(self,m, drpout,dim,acti, bn,format_="channels_last"):
 
+        """
+        the decoding unit which a residual block
+        """
+         
+        n = BatchNormalization()(m) if bn else n
+        #n=  Activation(acti)(n)
+        n=PReLU(shared_axes=[1, 2])(n)
+        n = Conv2D(dim, 3, padding='same',data_format = format_)(n)
 
-
-def unet(input_size = (128,128,1)):
-    ''' U-Net
-
-    Ags:
-        args (argparse):    Arguments parsed in command-lind
-        input_size(tuple):  Model input size
-    '''
-
-    inputs = Input(input_size)
-    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(inputs)
-    conv1 = Conv2D(32, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv1)
-    pool1 = MaxPooling2D(pool_size=(2, 2))(conv1)
-
-    conv2 = Conv2D(64, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(pool1)
-    conv2 = Conv2D(64, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv2)
-    pool2 = MaxPooling2D(pool_size=(2, 2))(conv2)
-
-    conv3 = Conv2D(128, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(pool2)
-    conv3 = Conv2D(128, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv3)
-    pool3 = MaxPooling2D(pool_size=(2, 2))(conv3)
-
-    conv4 = Conv2D(256, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(pool3)
-    conv4 = Conv2D(256, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv4)
-    pool4 = MaxPooling2D(pool_size=(2, 2))(conv4)
-
-    conv5 = Conv2D(512, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(pool4)
-    conv5 = Conv2D(512, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv5)
-
-    up6 = concatenate([Conv2DTranspose(256, (2, 2), strides=(2, 2), padding='same',
-                kernel_initializer=initializers.random_normal(stddev=0.01))(conv5),conv4], axis=3)
-    conv6 = Conv2D(256, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(up6)
-    conv6 = Conv2D(256, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv6)
-
-    up7 = concatenate([Conv2DTranspose(128, (2, 2), strides=(2, 2), padding='same',
-                kernel_initializer=initializers.random_normal(stddev=0.01))(conv6),conv3], axis=3)
-    conv7 = Conv2D(128, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(up7)
-    conv7 = Conv2D(128, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv7)
-
-    up8 = concatenate([Conv2DTranspose(64, (2, 2), strides=(2, 2),padding='same',
-                kernel_initializer=initializers.random_normal(stddev=0.01))(conv7),conv2], axis=3)
-    conv8 = Conv2D(64, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(up8)
-    conv8 = Conv2D(64, (3, 3), activation='relu', padding='same',)(conv8)
-
-    up9 = concatenate([Conv2DTranspose(32, (2, 2), strides=(2, 2), padding='same',
-                kernel_initializer=initializers.random_normal(stddev=0.01))(conv8),conv1], axis=3)
-    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(up9)
-    conv9 = Conv2D(32, (3, 3), activation='relu', padding='same',
-                   kernel_initializer=initializers.random_normal(stddev=0.01))(conv9)
-
-    conv10 = Conv2D(2, (1, 1), activation='relu',
-                    kernel_initializer=initializers.random_normal(stddev=0.01))(conv9)
-    conv10 = Activation('softmax')(conv10)
-    model = Model(inputs=[inputs], outputs=[conv10])
-
-    # try:
-    #     lr = args.lr
-    # except:
-    #     lr = 1e-4
-    lr = 0.0001
-    model.compile(optimizer=Adam(lr=lr), loss=sm.losses.bce_jaccard_loss, metrics=[CustomMeanIOU(cfg['classes'], dtype=np.float32)])
-
-    return model
+        n = BatchNormalization()(n) if bn else n
+        #n=  Activation(acti)(n)
+        n=PReLU(shared_axes=[1, 2])(n)
+        n = Conv2D(dim, 3, padding='same',data_format =format_ )(n)
+        
+        Save = Conv2D(dim, 1, padding='same',data_format = format_,use_bias=False)(m) 
+        n=add([Save,n]) 
+        
+        return  n 

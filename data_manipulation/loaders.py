@@ -353,6 +353,12 @@ def round_image(img, value=1):
             img[i][j] = int(img[i][j] + 0.5)
     return img
 
+def round_image(img, value=1):
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            img[i][j] = int(img[i][j] + 0.5)
+    return img
+
 def weighted_image(img, w):
     #img = img.astype(np.float64)
     img = (img * w) 

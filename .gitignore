@@ -142,3 +142,4 @@ testes.ipynb
 main.py
 /MICCAI_BraTS_2019_Data_Training
 firefly_algorithm.py
+*.h5
