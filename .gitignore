@@ -134,7 +134,7 @@ dmypy.json
 # Project
 /test_set
 testes.ipynb
-main.ipynb
+*.ipynb
 /output
 /logs/fit/20211023-185359
 /logs/fit/20211023-002622
