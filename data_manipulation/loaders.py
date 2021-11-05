@@ -15,8 +15,6 @@ from tensorflow.keras.preprocessing.image import load_img
 from tensorflow.keras.preprocessing.image import save_img
 
 from config import config as cfg
-
-
 class Dataset:
     def __init__(self, path, images_path, modality='flair', extract=True, initial_slice=0, final_slice=155,
                  train_split=0.8,
@@ -349,16 +347,31 @@ def read_img(p, img_size):
     img_c = np.copy(np.asarray(img)).astype(np.float)
     return img_c
 
+def round_image(img, value=1):
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            img[i][j] = int(img[i][j] + 0.5)
+    return img
+
+def round_image(img, value=1):
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            img[i][j] = int(img[i][j] + 0.5)
+    return img
 
 def weighted_image(img, w):
-    img = img.astype(np.float64)
-    img = (img * w)
+    #img = img.astype(np.float64)
+    img = (img * w) 
     return img
 
 
 def result_image(img1, img2, img3):
-    res = np.zeros((128,128))
+    res = np.zeros((img1.shape), dtype=img1.dtype)
     for n in range(img2.shape[0]):
         for m in range(img2.shape[1]):
-            res[n][m] = int((img1[n][m] + img2[n][m] + img3[n][m]) + 0.5)
+            #if img3==None:
+                #res[n][m] = int((img1[n][m] + img2[n][m]) + 0.5)
+            res[n][m] = (img1[n][m] + img2[n][m] + img3[n][m])
+    #res = (res / res.max()) * 3
+    #res = round_image(res)
     return res

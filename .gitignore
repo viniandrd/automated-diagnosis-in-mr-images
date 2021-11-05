@@ -132,4 +132,14 @@ dmypy.json
 /.idea
 
 # Project
+/test_set
+testes.ipynb
+*.ipynb
+/output
+/logs/fit/20211023-185359
+/logs/fit/20211023-002622
+/logs/fit/20211023-014344
+main.py
+/MICCAI_BraTS_2019_Data_Training
+firefly_algorithm.py
 *.h5
